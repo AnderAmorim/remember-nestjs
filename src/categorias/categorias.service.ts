@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Categoria } from './interfaces/categoria.interface';
 import { Model } from 'mongoose';
@@ -12,6 +12,8 @@ export class CategoriasService {
     constructor(
         @InjectModel('Categoria') private readonly categoriaModel: Model<Categoria>,
         private readonly jogadoresService: JogadoresService) {}
+
+        private logger = new Logger(CategoriasService.name);
 
     async criarCategoria(criarCategoriaDto: CriarCategoriaDto): Promise<Categoria> {
 
@@ -44,6 +46,28 @@ export class CategoriasService {
 
     }
 
+    async consultarCategoriaDoJogador(idJogador: any): Promise<Categoria> {
+
+        /*
+        Desafio
+        Escopo da exceção realocado para o próprio Categorias Service
+        Verificar se o jogador informado já se encontra cadastrado
+        */
+
+       //await this.jogadoresService.consultarJogadorPeloId(idJogador)                                   
+
+       const jogadores = await this.jogadoresService.consultarTodosJogadores()
+
+       const jogadorFilter = jogadores.filter( jogador => jogador._id == idJogador )
+
+       if (jogadorFilter.length == 0) {
+           throw new BadRequestException(`O id ${idJogador} não é um jogador!`)
+       }
+
+        return await this.categoriaModel.findOne().where('jogadores').in(idJogador).exec() 
+
+    }
+
     async atualizarCategoria(categoria: string, atualizarCategoriaDto: AtualizarCategoriaDto): Promise<void> {
    
         const categoriaEncontrada = await this.categoriaModel.findOne({categoria}).exec()
@@ -62,22 +86,39 @@ export class CategoriasService {
         const idJogador = params['idJogador']
 
         const categoriaEncontrada = await this.categoriaModel.findOne({categoria}).exec()
-        const jogadorJaCadastradoCategoria = await this.categoriaModel.find({categoria}).where('jogadores').in(idJogador).exec() 
+        const jogadorJaCadastradoCategoria = 
+                                await this.categoriaModel
+                                                    .findOne()
+                                                    .where('jogadores')
+                                                    .in(idJogador)
+                                                    .exec() 
 
-        await this.jogadoresService.consultarJogadorPeloId(idJogador)
+        /*
+        Desafio
+        Escopo da exceção realocado para o próprio Categorias Service
+        Verificar se o jogador informado já se encontra cadastrado
+        */                                            
+
+        //await this.jogadoresService.consultarJogadorPeloId(idJogador)
+       
+        const jogadores = await this.jogadoresService.consultarTodosJogadores()
+
+        const jogadorFilter = jogadores.filter( jogador => jogador._id == idJogador )
+
+        if (jogadorFilter.length == 0) {
+            throw new BadRequestException(`O id ${idJogador} não é um jogador!`)
+        }
         
         if (!categoriaEncontrada) {
             throw new BadRequestException(`Categoria ${categoria} não cadastrada!`)
         }
 
-        if(jogadorJaCadastradoCategoria.length > 0) {
-            throw new BadRequestException(`Jogador ${idJogador} já cadastrado na Categoria ${categoria}!`)
+        if(jogadorJaCadastradoCategoria) {
+            throw new BadRequestException(`Jogador ${idJogador} já cadastrado na Categoria ${jogadorJaCadastradoCategoria.categoria}!`)
         }
 
         categoriaEncontrada.jogadores.push(idJogador)
         await this.categoriaModel.findOneAndUpdate({categoria},{$set: categoriaEncontrada}).exec() 
-
     }
-
 
 }

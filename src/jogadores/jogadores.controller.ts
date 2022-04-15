@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Delete, UsePipes, ValidationPipe, Param, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Delete, UsePipes, ValidationPipe, Param, Put, Query } from '@nestjs/common';
 import { CriarJogadorDto } from './dtos/criar-jogador.dto'
 import { AtualizarJogadorDto } from './dtos/atualizar-jogador.dto'
 import { JogadoresService } from './jogadores.service'
@@ -26,22 +26,35 @@ export class JogadoresController {
         await this.jogadoresService.atualizarJogador(_id, atualizarJogadorDto)
     }
 
+    /*
+    Desafio
+    Passamos a utilizar query parameters com o verbo GET
+    */
+
     @Get()
-    async consultarJogadores(): Promise<Jogador[]> {
-                return await this.jogadoresService.consultarTodosJogadores();      
+    async consultarJogadores(
+        @Query('idJogador') _id: string): Promise<Jogador[] | Jogador> {
+        
+        if (_id) {
+            return await this.jogadoresService.consultarJogadorPeloId(_id);
+        }
+            
+        return await this.jogadoresService.consultarTodosJogadores();      
     }
 
+    /*
     @Get('/:_id')
     async consultarJogadorPeloId(
         @Param('_id', ValidacaoParametrosPipe) _id: string): Promise<Jogador> {
                 return await this.jogadoresService.consultarJogadorPeloId(_id);    
     }
+    */
 
 
     @Delete('/:_id')
     async deletarJogador(
         @Param('_id', ValidacaoParametrosPipe) _id: string): Promise<void> {
-            this.jogadoresService.deletarJogador(_id)
+            await this.jogadoresService.deletarJogador(_id)
         }
 
 }

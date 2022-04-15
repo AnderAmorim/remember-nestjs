@@ -1,4 +1,4 @@
-import { Controller, Body, Post, UsePipes, ValidationPipe, Get, Param, Put } from '@nestjs/common';
+import { Controller, Body, Post, UsePipes, ValidationPipe, Get, Param, Put, Query } from '@nestjs/common';
 import { CriarCategoriaDto } from './dtos/criar-categoria.dto';
 import { Categoria } from './interfaces/categoria.interface';
 import { CategoriasService } from './categorias.service';
@@ -15,17 +15,44 @@ export class CategoriasController {
         @Body() criarCategoriaDto: CriarCategoriaDto): Promise<Categoria> {
             return await this.categoriasService.criarCategoria(criarCategoriaDto)
     }
-    
+
+    /*
+    Desafio
+    Passamos a utilizado query parameters com o verbo Get
+    */
+
+    @Get()
+    async consultarCategorias(
+        @Query() params: string[]): Promise<Array<Categoria> | Categoria> {
+        const idCategoria = params['idCategoria']
+        const idJogador = params['idJogador']
+
+        if (idCategoria) {
+            return await this.categoriasService.consultarCategoriaPeloId(idCategoria)
+        }
+
+        if (idJogador) {
+            return await this.categoriasService.consultarCategoriaDoJogador(idJogador)
+        }
+
+        return await this.categoriasService.consultarTodasCategorias()
+
+    }
+
+    /*
     @Get()
     async consultarCategorias(): Promise<Array<Categoria>> {
         return await this.categoriasService.consultarTodasCategorias()
     }
+    */
 
+    /*
     @Get('/:categoria')
     async consultarCategoriaPeloId(
         @Param('categoria') categoria: string): Promise<Categoria> {
             return await this.categoriasService.consultarCategoriaPeloId(categoria)
         }
+    */
 
     @Put('/:categoria')
     @UsePipes(ValidationPipe)    
